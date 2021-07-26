@@ -160,6 +160,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
 
 [[package]]
+name = "line-col"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86ed0a153985c2f06def4f082525ee4ccaa193298defbb6df6a68ef0882d84a9"
+
+[[package]]
 name = "linked-hash-map"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -267,11 +273,13 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "rusefs"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "clap",
  "config",
+ "line-col",
  "regex",
+ "termcolor",
  "walkdir",
 ]
 

@@ -1,7 +1,8 @@
 extern crate clap;
 
-use std::fs;
-use std::path::PathBuf;
+use std::cmp;
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 use clap::clap_app;
 
@@ -9,14 +10,37 @@ use regex::Regex;
 
 use walkdir::{DirEntry, WalkDir};
 
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+
 fn main() {
+	let matches = clap_app!(rusefs =>
+		(version: "0.2.0")
+		(author: "Kyza")
+		(about: "Search your filesystem quickly using regex.")
+		(@arg FOLDER: -f --folder +multiple +takes_value "The folder to search. Defaults to the current directory.")
+		(@arg NAME: -n --name +multiple +takes_value "The regex to search for in the file name.")
+		(@arg CONTENTS: -c --contents +multiple +takes_value "The regex to search for in the file contents.")
+		(@arg MAX_SIZE: -s --max-size +takes_value "The maximum file size allowed to search in the file contents (default 100MB).")
+		(@arg EXCLUDE: -e --exclude +multiple +takes_value "The regex to exclude searching files and folders.")
+	)
+	.get_matches();
+
+	let config_file_path = Path::new(env::current_exe().unwrap().to_str().unwrap())
+		.parent()
+		.unwrap()
+		.join("rusefs-config.toml");
+
 	let mut settings = config::Config::default();
 	settings
 		.set_default("max_size", 100000000)
 		.unwrap()
-		.set_default("exclude", vec!["^\\.git$"])
+		.set_default("exclude", vec![] as Vec<String>)
 		.unwrap()
-		.merge(config::File::with_name("rusefs-config").required(false))
+		.merge(
+			config::File::with_name(config_file_path.to_str().unwrap_or("rusefs-config.toml"))
+				.required(false),
+		)
 		.unwrap();
 
 	let mut max_size: u64 = settings.get_int("max_size").unwrap() as u64;
@@ -26,18 +50,6 @@ fn main() {
 		.iter()
 		.map(|exclude_value| exclude_value.to_string())
 		.collect::<Vec<_>>();
-
-	let matches = clap_app!(myapp =>
-		(version: "1.0")
-		(author: "Kyza")
-		(about: "Search your filesystem quickly using regex.")
-		(@arg FOLDER: -f --folder +multiple +takes_value "The folder to search. Defaults to the current directory.")
-		(@arg NAME: -n --name +multiple +takes_value "The regex to search for in the file name.")
-		(@arg CONTENTS: -c --contents +multiple +takes_value "The regex to search for in the file contents.")
-		(@arg MAX_SIZE: -s --max-size +takes_value "The maximum file size allowed to search in the file contents (default 100MB).")
-		(@arg EXCLUDE: -e --exclude +takes_value "The regex to exclude searching files and folders.")
-	)
-	.get_matches();
 
 	let mut folders: Vec<&str> = matches.values_of("FOLDER").unwrap_or_default().collect();
 	if folders.len() == 0 {
@@ -119,19 +131,66 @@ fn search_file_name(names: &[Regex], file_name: &str) -> bool {
 	false
 }
 
-fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) -> bool {
+fn write_color(stdout: &mut termcolor::StandardStream, color: termcolor::Color, text: String) {
+	let result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
+	match result {
+		Ok(res) => res,
+		Err(error) => panic!("Failed to change color {:?}", error),
+	}
+	write!(stdout, "{}", &text);
+}
+fn writeln_color(stdout: &mut termcolor::StandardStream, color: termcolor::Color, text: String) {
+	let result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
+	match result {
+		Ok(res) => res,
+		Err(error) => panic!("Failed to change color {:?}", error),
+	}
+	writeln!(stdout, "{}", &text);
+}
+
+fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) {
+	let mut stdout = StandardStream::stdout(ColorChoice::Always);
+
 	if let Ok(metadata) = fs::metadata(&file_path) {
 		if metadata.len() < *max_size && metadata.file_type().is_file() {
 			if let Ok(file_contents) = fs::read_to_string(&*file_path) {
+				let newlines = &file_contents
+					.char_indices()
+					.filter_map(|(ix, c)| if c == '\n' { Some(ix) } else { None })
+					.collect::<Vec<_>>();
+
 				for contents in contentses {
-					if contents.is_match(&file_contents) {
-						return true;
+					let mut first_line = true;
+					for capture in contents.find_iter(&file_contents) {
+						if first_line {
+							writeln_color(&mut stdout, Color::Cyan, format!("\n{}", &file_path));
+							first_line = false;
+						}
+						write_color(
+							&mut stdout,
+							Color::Blue,
+							format!(
+								"{} ",
+								newlines
+									.binary_search(&capture.start())
+									.unwrap_or_else(|x| x) + 1,
+							),
+						);
+
+						let start = &capture.start();
+						let end = &capture.end();
+
+						let before = &file_contents[..*start].lines().collect::<Vec<_>>()[0];
+						let after = &file_contents[*end..].lines().collect::<Vec<_>>()[0];
+
+						write_color(&mut stdout, Color::White, format!("{}", before));
+						write_color(&mut stdout, Color::Green, format!("{}", capture.as_str()));
+						writeln_color(&mut stdout, Color::White, format!("{}", after));
 					}
 				}
 			}
 		}
 	}
-	false
 }
 
 fn search_folder(
@@ -174,15 +233,13 @@ fn search_folder(
 			if searching_names {
 				if search_file_name(&names, &file_name) {
 					if searching_content {
-						if search_file_contents(&contentses, &max_size, &file_path) {
-							println!("- {}", file_path);
-						}
+						search_file_contents(&contentses, &max_size, &file_path);
 					} else {
 						println!("- {}", file_path);
 					}
 				}
-			} else if searching_content && search_file_contents(&contentses, &max_size, &file_path) {
-				println!("- {}", file_path);
+			} else if searching_content {
+				search_file_contents(&contentses, &max_size, &file_path);
 			}
 		}
 	}
