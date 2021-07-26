@@ -132,20 +132,28 @@ fn search_file_name(names: &[Regex], file_name: &str) -> bool {
 }
 
 fn write_color(stdout: &mut termcolor::StandardStream, color: termcolor::Color, text: String) {
-	let result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
+	let mut result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
 	match result {
 		Ok(res) => res,
 		Err(error) => panic!("Failed to change color {:?}", error),
 	}
-	write!(stdout, "{}", &text);
+	result = write!(stdout, "{}", &text);
+	match result {
+		Ok(res) => res,
+		Err(error) => panic!("Failed to write to console {:?}", error),
+	}
 }
 fn writeln_color(stdout: &mut termcolor::StandardStream, color: termcolor::Color, text: String) {
-	let result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
+	let mut result = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
 	match result {
 		Ok(res) => res,
 		Err(error) => panic!("Failed to change color {:?}", error),
 	}
-	writeln!(stdout, "{}", &text);
+	result = writeln!(stdout, "{}", &text);
+	match result {
+		Ok(res) => res,
+		Err(error) => panic!("Failed to write to console {:?}", error),
+	}
 }
 
 fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) {
