@@ -14,6 +14,8 @@ use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 fn main() {
+	let mut stdout = StandardStream::stdout(ColorChoice::Always);
+
 	let matches = clap_app!(rusefs =>
 		(version: "0.2.4")
 		(author: "Kyza")
@@ -59,7 +61,11 @@ fn main() {
 	let contentses: Vec<&str> = matches.values_of("CONTENTS").unwrap_or_default().collect();
 
 	if names.len() == 0 && contentses.len() == 0 {
-		println!("Please specify something to search.");
+		writeln_color(
+			&mut stdout,
+			Color::Red,
+			format!("Please specify something to search."),
+		);
 		return;
 	}
 
@@ -74,7 +80,11 @@ fn main() {
 		exclude_strings.push(exclude_string.to_string());
 	}
 
-	println!("Excluding: \"{}\"", exclude_strings.join("\", \""));
+	writeln_color(
+		&mut stdout,
+		Color::White,
+		format!("Excluding: \"{}\"", exclude_strings.join("\", \"")),
+	);
 
 	let exclude_regex = exclude_strings
 		.iter()
@@ -93,9 +103,17 @@ fn main() {
 
 	if user_max_size > 0.0 {
 		max_size = (user_max_size * 1000000.0) as u64;
-		println!("Max Content Search Size: {}MB", user_max_size);
+		writeln_color(
+			&mut stdout,
+			Color::White,
+			format!("Max Content Search Size: {}MB", user_max_size),
+		);
 	} else {
-		println!("Max Content Search Size: {}MB", max_size / 1000000);
+		writeln_color(
+			&mut stdout,
+			Color::White,
+			format!("Max Content Search Size: {}MB", max_size / 1000000),
+		);
 	}
 
 	for folder in folders {
@@ -106,8 +124,11 @@ fn main() {
 			&exclude_regex,
 			&max_size,
 		) {
-			println!("Failed to search.");
-			println!("{}", _err);
+			writeln_color(
+				&mut stdout,
+				Color::Red,
+				format!("Failed to search {}", _err),
+			);
 		}
 	}
 }
@@ -235,13 +256,18 @@ fn search_folder(
 	exclude: &[Regex],
 	max_size: &u64,
 ) -> Result<(), walkdir::Error> {
+	let mut stdout = StandardStream::stdout(ColorChoice::Always);
 	if let Ok(folder_path_buf) = fs::canonicalize(PathBuf::from(&folder)) {
 		let folder_path = folder_path_buf
 			.to_str()
 			.unwrap()
 			.strip_prefix("\\\\?\\")
 			.unwrap();
-		println!("Searching: \"{}\"", folder_path);
+		writeln_color(
+			&mut stdout,
+			Color::White,
+			format!("\nSearching: \"{}\"", folder_path),
+		);
 	}
 
 	for entry in WalkDir::new(folder)
@@ -270,7 +296,11 @@ fn search_folder(
 					if searching_content {
 						search_file_contents(&contentses, &max_size, &file_path);
 					} else {
-						println!("- {}", file_path);
+						writeln_color(
+							&mut stdout,
+							Color::White,
+							format!("Searching: \"{}\"", file_path),
+						);
 					}
 				}
 			} else if searching_content {
