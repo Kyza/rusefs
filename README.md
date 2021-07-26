@@ -20,7 +20,7 @@ rusefs -f ~/GitHub -n "(?i)\.js" -c "functionName\(\)" -e "node_modules" -s 5
 
 ## Installation
 
-Download the binary for your architechure from the [releases](https://github.com/Kyza/rusefs/releases), extract it, and place it somewhere in your PATH.
+Download the binary for your architechure from the [releases](https://github.com/Kyza/rusefs/releases), extract it, and place it somewhere in your PATH. Alternatively you can create an alias for it in your `.bashrc` or `.zshrc`.
 
 A [`rusefs-config.toml`](https://github.com/Kyza/rusefs/blob/master/rusefs-config.toml) file can be created in the same folder as the binary to include default settings. The keys are the same as the long names for the CLI flags, run `rusefs --help` to find them.
 
