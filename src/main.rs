@@ -15,7 +15,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 fn main() {
 	let matches = clap_app!(rusefs =>
-		(version: "0.2.1")
+		(version: "0.2.2")
 		(author: "Kyza")
 		(about: "Search your filesystem quickly using regex.")
 		(@arg FOLDER: -f --folder +multiple +takes_value "The folder to search. Defaults to the current directory.")
@@ -161,11 +161,14 @@ fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) {
 
 				for contents in contentses {
 					let mut first_line = true;
+					let mut count = 0;
 					for capture in contents.find_iter(&file_contents) {
+						count += 1;
 						if first_line {
 							writeln_color(&mut stdout, Color::Cyan, format!("\n{}", &file_path));
 							first_line = false;
 						}
+						write_color(&mut stdout, Color::Yellow, format!("{} ", count));
 						write_color(
 							&mut stdout,
 							Color::Blue,
@@ -180,14 +183,26 @@ fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) {
 						let start = &capture.start();
 						let end = &capture.end();
 
-						let lines_before = &file_contents[..*start].lines().collect::<Vec<_>>();
-						let before = lines_before.last().unwrap();
-						let lines_after = &file_contents[*end..].lines().collect::<Vec<_>>();
-						let after = lines_after.first().unwrap();
+						let starting_string_vec = &file_contents[..*end].lines().collect::<Vec<_>>();
+						let mut starting_string = "";
+						if starting_string_vec.len() > 0 {
+							let substring = &starting_string_vec[starting_string_vec.len() - 1];
+							starting_string = &substring[..&substring.len()
+								- cmp::max(0 as isize, *end as isize - *start as isize) as usize];
+						}
 
-						write_color(&mut stdout, Color::White, format!("{}", before));
+						let ending_string_vec = &file_contents[*end..].lines().collect::<Vec<_>>();
+						let mut ending_string = "";
+						if ending_string_vec.len() > 0 {
+							ending_string = ending_string_vec[0];
+						}
+
+						write_color(&mut stdout, Color::White, format!("{}", starting_string));
 						write_color(&mut stdout, Color::Green, format!("{}", capture.as_str()));
-						writeln_color(&mut stdout, Color::White, format!("{}", after));
+						writeln_color(&mut stdout, Color::White, format!("{}", ending_string));
+					}
+					if count > 0 {
+						writeln_color(&mut stdout, Color::Yellow, format!("{} Results", count));
 					}
 				}
 			}
