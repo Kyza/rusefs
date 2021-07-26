@@ -17,7 +17,7 @@ fn main() {
 	let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
 	let matches = clap_app!(rusefs =>
-		(version: "0.2.4")
+		(version: "0.2.5")
 		(author: "Kyza")
 		(about: "Search your filesystem quickly using regex.")
 		(@arg FOLDER: -f --folder +multiple +takes_value "The folder to search. Defaults to the current directory.")
