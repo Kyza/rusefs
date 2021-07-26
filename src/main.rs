@@ -15,7 +15,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 fn main() {
 	let matches = clap_app!(rusefs =>
-		(version: "0.2.0")
+		(version: "0.2.1")
 		(author: "Kyza")
 		(about: "Search your filesystem quickly using regex.")
 		(@arg FOLDER: -f --folder +multiple +takes_value "The folder to search. Defaults to the current directory.")
@@ -180,8 +180,10 @@ fn search_file_contents(contentses: &[Regex], max_size: &u64, file_path: &str) {
 						let start = &capture.start();
 						let end = &capture.end();
 
-						let before = &file_contents[..*start].lines().collect::<Vec<_>>()[0];
-						let after = &file_contents[*end..].lines().collect::<Vec<_>>()[0];
+						let lines_before = &file_contents[..*start].lines().collect::<Vec<_>>();
+						let before = lines_before.last().unwrap();
+						let lines_after = &file_contents[*end..].lines().collect::<Vec<_>>();
+						let after = lines_after.first().unwrap();
 
 						write_color(&mut stdout, Color::White, format!("{}", before));
 						write_color(&mut stdout, Color::Green, format!("{}", capture.as_str()));
