@@ -12,10 +12,10 @@ A simple [Rust](https://www.rust-lang.org/) [grep](https://www.gnu.org/software/
 
 ## Example
 
-Search for all JavaScript files by their extension (case-insensitively) with `functionName()` in them that are under 5MB while skipping all files and folders named `node_modules`.
+Search for all JavaScript files by their extension (case-insensitively) with `functionName()` in them that are under 5MB in `~/GitHub` and `~/Downloads` while skipping all files and folders named `node_modules` or `.git`.
 
 ```bash
-rusefs -f ~/GitHub -n "(?i)\.js" -c "functionName\(\)" -e "node_modules" -s 5
+rusefs -f ~/GitHub -f ~/Downloads -n "(?i)\.js" -c "functionName\(\)" -e "node_modules" -e "^\.git$" -s 5
 ```
 
 ## Installation
