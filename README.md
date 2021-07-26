@@ -1,4 +1,12 @@
-# rusefs
+<h1 align="center">
+  rusefs
+</h1>
+
+<p align="center">
+  RUst SEarch FileSystem
+</p>
+
+---
 
 A simple [Rust](https://www.rust-lang.org/) [grep](https://www.gnu.org/software/grep/)-like CLI tool for searching your filesystem with [regex](https://docs.rs/regex/1.5.4/regex/#syntax).
 
