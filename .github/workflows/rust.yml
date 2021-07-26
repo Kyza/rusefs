@@ -31,7 +31,7 @@ jobs:
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)
-          bin: ...
+          bin: rusefs
         env:
           # (required)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
